@@ -39,8 +39,8 @@ echo ""
 export IOS_VERSION="6.1"
 export DEVROOT=$(xcode-select -print-path)"/Platforms/iPhoneOS.platform/Developer"
 export SDKROOT="$DEVROOT/SDKs/iPhoneOS${IOS_VERSION}.sdk"
-export HOSTCC="$DEVROOT/usr/bin/llvm-gcc-4.2"
-export HOSTCXX="$DEVROOT/usr/bin/llvm-g++-4.2"
+export HOSTCC="$DEVROOT/usr/bin/arm-apple-darwin10-llvm-gcc-4.2"
+export HOSTCXX="$DEVROOT/usr/bin/arm-apple-darwin10-llvm-gxx-4.2"
 
 # other variable
 export NOWPATH="$(dirname "$0")"
