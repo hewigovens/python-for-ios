@@ -22,7 +22,7 @@
 set -o errexit
 
 # set version
-export PYVER="2.7.3"
+export PYVER="3.2.2"
 if [ -n "$1" ]; then
     export PYVER="$1"
 fi
@@ -36,11 +36,11 @@ echo "[Script version 0.1.2 by Linus Yang]"
 echo ""
 
 # sdk variable
-export IOS_VERSION="5.1"
+export IOS_VERSION="6.1"
 export DEVROOT=$(xcode-select -print-path)"/Platforms/iPhoneOS.platform/Developer"
 export SDKROOT="$DEVROOT/SDKs/iPhoneOS${IOS_VERSION}.sdk"
-export HOSTCC="$DEVROOT/usr/bin/clang"
-export HOSTCXX="$DEVROOT/usr/bin/clang"
+export HOSTCC="$DEVROOT/usr/bin/llvm-gcc-4.2"
+export HOSTCXX="$DEVROOT/usr/bin/llvm-g++-4.2"
 
 # other variable
 export NOWPATH="$(dirname "$0")"
@@ -55,8 +55,8 @@ export LDIDLOC="$NOWDIR/ldid"
 export PRELIB="${NOWDIR}/libs-prebuilt-arm.tgz"
 export PRELIBLOC="${NOWDIR}/prelib"
 export DPKGLOC="$(which dpkg-deb)"
-export NATICC="/usr/bin/arm-apple-darwin9-gcc-4.2.1"
-export NATICXX="/usr/bin/arm-apple-darwin9-g++-4.2.1"
+export NATICC="/usr/bin/arm-apple-darwin10-llvm-gcc-4.2"
+export NATICXX="/usr/bin/arm-apple-darwin10-llvm-g++-4.2"
 
 # check dependency
 cd "$NOWDIR"
@@ -121,6 +121,7 @@ if [ "${PYSHORT}" '>' "2.6" -a "$(uname -r)" '<' "11.0.0" ]; then
     cd "$NOWDIR"
 fi
 
+#COMMENTS=$(cat < <END
 # get rid of old build
 rm -rf Python-${PYVER}
 tar zxf Python-${PYVER}.tgz
@@ -134,29 +135,31 @@ fi
 
 # build for native machine
 echo '[Building for host system]'
-./configure CC="clang" --prefix="$PWD/_install_host/usr" --enable-shared --enable-ipv6 --disable-toolbox-glue
+./configure --prefix="$PWD/_install_host/usr" --enable-shared --enable-ipv6 --disable-toolbox-glue
 make python.exe Parser/pgen
 mv python.exe hostpython
 mv Parser/pgen Parser/hostpgen
-mv libpython${PYSHORT}.a hostlibpython${PYSHORT}.a
+mv libpython${PYSHORT}m.a hostlibpython${PYSHORT}m.a
 make install HOSTPYTHON=./hostpython
 make distclean
 
 # patch python to cross-compile
 patch -p1 < ../patches/Python-xcompile-${PYVER}.patch
+#END)
 
+#pushd ./Python-${PYVER}
 # set up environment variables for cross compilation
 export CPPFLAGS="-I$SDKROOT/usr/include/ -I$PRELIBLOC/usr/include"
-export CFLAGS="$CPPFLAGS -arch armv6 -pipe -isysroot $SDKROOT"
+export CFLAGS="$CPPFLAGS -pipe -isysroot $SDKROOT"
 export CXXFLAGS="$CFLAGS"
-export LDFLAGS="-isysroot $SDKROOT -miphoneos-version-min=3.0 -L$SDKROOT/usr/lib/ -L$PRELIBLOC/usr/lib"
+export LDFLAGS="-isysroot $SDKROOT -miphoneos-version-min=5.0 -L$SDKROOT/usr/lib/ -L$PRELIBLOC/usr/lib"
 export CC="$NATICC"
 export CXX="$NATICXX"
 export LD="$DEVROOT/usr/bin/ld"
 
-# build for armv6
+# build for armv7
 echo '[Cross compiling for Darwin ARM]'
-./configure --prefix=/usr --enable-ipv6 --host=armv6-apple-darwin --enable-shared --disable-toolbox-glue --with-signal-module --with-system-ffi
+./configure --prefix=/usr --host=armv7-apple-darwin --enable-shared --with-signal-module --with-system-ffi
 make HOSTPYTHON=./hostpython HOSTPGEN=./Parser/hostpgen CROSS_COMPILE_TARGET=yes
 make install HOSTPYTHON=./hostpython CROSS_COMPILE_TARGET=yes prefix="$PWD/_install/usr"
 find "$PWD/_install/usr/lib/python${PYSHORT}" -type f -name *.pyc -exec rm -f {} \;
